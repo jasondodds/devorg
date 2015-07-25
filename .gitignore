@@ -1,4 +1,8 @@
-.project
-.settings
-salesforce.schema
-Referenced Packages
+### Mavens Mate ###
+config/**
+debug/**
+apex-scripts/**
+mm.log
+
+### Metadata ###
+*-meta.xml

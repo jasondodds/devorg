@@ -1,0 +1,7 @@
+<apex:page controller="sftkCustomerProfilesController" sidebar="false">
+	<apex:pageBlock title="My Accounts">
+        <apex:pageBlockTable value="{!accounts}" var="item">
+            <apex:column value="{!item.name}"/> 
+        </apex:pageBlockTable> 
+    </apex:pageBlock> 
+</apex:page>

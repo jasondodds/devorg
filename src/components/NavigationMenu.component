@@ -1,0 +1,180 @@
+<apex:component >
+<script type="text/javascript">
+    var navMenu = {
+        "title":"Capital PMP",
+        "type":"accordion",
+        "collapsible":true, 
+        "entries":[
+            {
+            "entryType":"parent",
+            "label":"Parent 1",
+            "callback":function(){},
+            "children":[
+                {
+                "entryType":"section",
+                "label":"Section 1",
+                "callback":function(){console.log('Section 1')},
+                "listType":"upper-alpha",
+                "children":[
+                    {
+                    "entryType":"item",
+                    "label":"Item 1",
+                    "callback":function(){console.log('Item 1')}
+                    },
+                    {
+                    "entryType":"item",
+                    "label":"Item 2",
+                    "callback":function(){console.log('Item 2')}
+                    },
+                    {
+                    "entryType":"item",
+                    "label":"Item 3",
+                    "callback":function(){console.log('Item 3')}
+                    }
+                ]
+                },
+                {
+                "entryType":"section",
+                "label":"Section 2",
+                "callback":function(){console.log('Section 2')},
+                "listType":"upper-alpha",
+                "children":[
+                    {
+                    "entryType":"item",
+                    "label":"Item 1",
+                    "callback":function(){console.log('Item 4')}
+                    },
+                    {
+                    "entryType":"item",
+                    "label":"Item 2",
+                    "callback":function(){console.log('Item 5')}
+                    },
+                    {
+                    "entryType":"item",
+                    "label":"Item 3",
+                    "callback":function(){console.log('Item 6')}
+                    }
+                ]
+                }
+            ]
+            },
+            {
+            "entryType":"parent",
+            "label":"Parent 2",
+            "callback":function(){},
+            "children":[
+                {
+                "entryType":"section",
+                "label":"Section 1",
+                "callback":function(){console.log('Section 1')},
+                "listType":"upper-alpha",
+                "children":[
+                    {
+                    "entryType":"item",
+                    "label":"Item 1",
+                    "callback":function(){console.log('Item 7')}
+                    },
+                    {
+                    "entryType":"item",
+                    "label":"Item 2",
+                    "callback":function(){console.log('Item 8')}
+                    },
+                    {
+                    "entryType":"item",
+                    "label":"Item 3",
+                    "callback":function(){console.log('Item 9')}
+                    }
+                ]
+                },
+                {
+                "entryType":"section",
+                "label":"Section 2",
+                "callback":function(){console.log('Section 2')},
+                "listType":"upper-alpha",
+                "children":[
+                    {
+                    "entryType":"item",
+                    "label":"Item 1",
+                    "callback":function(){console.log('Item 10')}
+                    },
+                    {
+                    "entryType":"item",
+                    "label":"Item 2",
+                    "callback":function(){console.log('Item 11')}
+                    },
+                    {
+                    "entryType":"item",
+                    "label":"Item 3",
+                    "callback":function(){console.log('Item 12')}
+                    }
+                ]
+                }
+            ]
+            },
+            {
+            "entryType":"parent",
+            "label":"No Sections",
+            "callback":function(){},
+            "children":[
+                {
+                "entryType":"item",
+                "label":"Item 1",
+                "callback":function(){console.log('Item 1')}
+                },
+                {
+                "entryType":"item",
+                "label":"Item 2",
+                "callback":function(){console.log('Item 2')}
+                },
+                {
+                "entryType":"item",
+                "label":"Item 3",
+                "callback":function(){console.log('Item 3')}
+                }
+            ]
+            }
+        ]
+    };
+
+    function generateNavMenu(){
+        j$.each(navMenu.entries, function(i, header) {
+            //Print <a> for accordion label and create panel for accordion
+            j$("#navigationMenu").append("<a href='#' class='navHeader'>"+header.label+"</a>");
+            var panelObject=j$("<div class='navPanel'></div>");
+            j$("#navigationMenu").append(panelObject);
+            console.log("found "+header.children.length+" sections for header "+i);
+            
+            j$.each(header.children, function(j, section) {
+                //Create a Section header if this is a section
+                if(section.entryType=="section"){
+                    var sectionObject=j$("<div class='navParent'>"+section.label+"</div>");
+                    j$(panelObject).append(sectionObject);
+                }  
+                else {
+                    section=header;
+                }
+                //Create UL based on listType
+                if(section.listType!=null){
+                    var listObject=j$("<ul style='list-style-type:"+section.listType+"'></ul>");
+                }
+                else {
+                    var listObject=j$("<ul style='list-style-type:none'></ul>");
+                }
+                //Add items to <ul>
+                j$(panelObject).append(listObject);
+                j$.each(section.children, function(k, listItem) {
+                    j$(listObject).append("<li>"+listItem.label+"</li>");
+                });
+            });
+        });
+    }
+    
+    j$(document).ready(function() {
+        generateNavMenu();
+        j$("#navigationMenu").accordion({collapsible:true,active:false,fillSpace:false,autoHeight:true});
+        j$(".ui-accordion-content").css("padding",".5em");
+        
+    });
+</script>
+<div id="navigationMenu"></div>
+</apex:component>

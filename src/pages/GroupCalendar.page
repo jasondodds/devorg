@@ -1,0 +1,182 @@
+<apex:page standardController="Group_Calendar_Config__c" extensions="GroupCalendarController" showHeader="true" sidebar="true" setup="true">
+	<link type="text/css" rel="stylesheet" href="{!URLFOR($Resource.groupCalendarResources,'vendor/jquery/ui/css/group-calendar/jquery-ui-1.10.3.custom.min.css')}"/>
+	<link type="text/css" rel="stylesheet" href="{!URLFOR($Resource.groupCalendarResources,'vendor/bootstrap3-sfdc/css/bootstrap3-sfdc.css')}"/>
+	<link type="text/css" rel="stylesheet" href="{!URLFOR($Resource.groupCalendarResources,'vendor/jquery/plugins/fullcalendar.css')}"/>
+	<link type="text/css" rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/qtip2/2.1.1/jquery.qtip.min.css"/>
+	<link type="text/css" rel="stylesheet" href="{!URLFOR($Resource.groupCalendarResources,'css/groupCalendar.css')}"/>
+
+<!-- PAGE DOM -->
+<apex:form >
+<div class="bootstrap3-sfdc">
+<div class="container-fluid">
+	<div class="panel-group" id="accordion">
+		<div class="panel panel-default">
+			<div class="panel-heading">
+				<h5 class="panel-title" style="padding-left:5px;"><strong>{!Group_Calendar_Config__c.Name} Group Calendar</strong></h5>
+				<a class="pull-right" data-toggle="collapse" data-parent="#accordion" href="#collapseOne">
+					<i class="glyphicon glyphicon-cog"></i> Settings
+				</a>
+			</div>
+			<div id="collapseOne" class="panel-collapse collapse">
+				<div class="panel-body">
+					<div class="form-horizontal" role="form">
+					<div class="row-fluid">
+						<div class="col-xs-4" style="margin-right:25px;">
+							<div class="form-group">
+								<label for="calendarName">Calendar Name</label>
+								<apex:inputField value="{!Group_Calendar_Config__c.Name}" styleClass="form-control" id="calendarName"/>
+							</div>
+							<div class="form-group">
+								<label for="groupName">Group Name</label>
+								<apex:selectList id="groupName" value="{!Group_Calendar_Config__c.Group_Name__c}" size="1" styleClass="form-control" style="height:35px;">
+                                	<apex:selectOption itemValue="" itemLabel="--None--"/>
+	                                <apex:selectOptions value="{!groupOptions}"/>
+	                            </apex:selectList>
+							</div>
+							<div class="form-group">
+								<apex:commandButton action="{!save}" styleClass="btn btn-primary" value="Save Calendar Settings"/>
+							</div>
+						</div>
+						<div class="col-xs-4">
+							<div class="form-group">
+								<label for="groupName">Options</label>
+								<div class="checkbox">
+									<label for="saveCanceled">
+										<apex:inputCheckbox value="{!Group_Calendar_Config__c.Save_Canceled_Events__c}" id="saveCanceled"/>
+										Save Canceled Events
+									</label>
+									<br/>
+									<br/>
+									<label for="schedulePastEvents">
+										<apex:inputCheckbox value="{!Group_Calendar_Config__c.Schedule_Past_Events__c}" id="schedulePastEvents"/>
+										Allow scheduling of Events in the past
+									</label>
+								</div>
+							</div>
+						</div>
+						<div class="col-xs-4">
+						</div>
+					</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="row">
+		<div class="col-xs-4">
+			<div id="timeZoneSelect"></div>
+		</div>
+		<div class="col-xs-4"></div>
+		<div class="col-xs-4"></div>
+	</div>
+	<div id="calendar"></div>
+</div>
+</div>
+</apex:form>
+<div id="modalWindow"></div>
+<!-- END PAGE DOM -->
+
+<!-- PAGE TEMPLATES -->
+<script type="text/template" id="eventModalTemplate">
+<div class="eventEdit">
+	<form id="modalForm">
+		<div class="modal-field-row"><div class="modal-field-label">Event Subject:</div>
+			<input id="modalSubject" value="<%= data.Subject %>" class="modal-field" name="Event Subject" required/>
+		</div>
+		<div class="modal-field-row"><div class="modal-field-label">Event Start:</div>
+			<input id="modalStartDate" value="<%= data.StartDateTime %>" class="modal-field" name="Event Start Time"/>
+			<div style="display:inline;padding-left:5px;font-weight:bold;">(<%= app.calendarTimeZone %>)</div>
+		</div>
+		<div class="modal-field-row"><div class="modal-field-label">Event End:</div>
+			<input id="modalEndDate" value="<%= data.EndtDateTime %>" class="modal-field" name="Event End Time"/>
+			<div style="display:inline;padding-left:5px;font-weight:bold;">(<%= app.calendarTimeZone %>)</div>
+		</div>
+		<div class="modal-field-row">
+			<div class="modal-field-label">Description:</div>
+			<br />
+			<textarea id="modalNotes" class="modal-textarea" name="Description"><%= data.Description %></textarea>
+		</div>
+		<div class="modal-note">* By clicking on Save below an email will be sent to the customer</div>
+		<button id="modalCancel" style="float:right;display:<%= data.Id ? 'block' : 'none'%>;">Cancel Event</button>
+		<button id="modalSave" autofocus>Save</button>
+	</form>
+</div>
+</script>
+<script type="text/template" id="timeZoneSelectTemplate">
+	<div class="selectLabel">Time Zone:</div>
+	<select id="calendarTimeZone" class="modal-field form-control input-sm" name="calendarTimeZone">
+		<%  var daylightSavings = app.isDaylightSavings ? 'D' : 'S'; %>
+		<option value="E<%=daylightSavings%>T">Eastern (E<%=daylightSavings%>T)</option>
+		<option value="C<%=daylightSavings%>T">Central (C<%=daylightSavings%>T)</option>
+		<option value="M<%=daylightSavings%>T">Mountain (M<%=daylightSavings%>T)</option>
+		<option value="P<%=daylightSavings%>T">Pacific (P<%=daylightSavings%>T)</option>
+	</select>
+</script>
+<script type="text/template" id="tooltipTemplate">
+<div class="tooltip">
+	<div class="tooltipLabel">Event Information: </div>
+	<div class="tooltipContentRow"><%= data.Subject %></div>
+	<div class="tooltipLabel" style="padding-top:5px;">Description: </div>
+	<div class="tooltipContentRow"><%= data.Description %></div>
+</div>
+</script>
+<!-- END PAGE TEMPLATES -->
+
+<!-- JS RESOURCES -->
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.5.2/underscore-min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
+<script src="{!URLFOR($Resource.groupCalendarResources,'vendor/jquery/plugins/jquery-ui-timepicker-addon.js')}"></script>
+<script src="{!URLFOR($Resource.groupCalendarResources,'vendor/jquery/plugins/fullcalendar.min.js')}"></script>
+<script src="//ajax.aspnetcdn.com/ajax/jquery.validate/1.11.1/jquery.validate.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/qtip2/2.1.1/jquery.qtip.min.js"></script>
+<script src="//ajax.aspnetcdn.com/ajax/jquery.validate/1.11.1/additional-methods.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/datejs/1.0/date.min.js"></script>
+<script src="{!URLFOR($Resource.groupCalendarResources,'vendor/bootstrap3-sfdc/js/bootstrap.min.js')}"></script>
+<script src="{!URLFOR($Resource.groupCalendarResources,'js/groupCalendar.js')}"></script>
+<!-- END JS RESOURCES -->
+
+<!-- JS APPLICATION CODE -->
+<script type="text/javascript">
+	var app = app || {};
+	/* Local Methods */
+	app.getURLParameter = function(sParam){
+	    var sPageURL = window.location.search.substring(1);
+	    var sURLVariables = sPageURL.split('&');
+	    for (var i = 0; i < sURLVariables.length; i++){
+	        var sParameterName = sURLVariables[i].split('=');
+	        if (sParameterName[0] == sParam){
+	            return sParameterName[1];
+	        }
+	    }
+	    return null;
+	};
+	/* Local Variables */
+	app.controller = GroupCalendarController;
+	app.calendarTimeZone = '';
+	app.isDaylightSavings = Date.today().isDaylightSavingTime();
+	app.calendarConfig = {};
+	app.calendarConfig.whatid = app.getURLParameter('whatid');
+	app.calendarConfig.saveCanceled = {!Group_Calendar_Config__c.Save_Canceled_Events__c};
+	app.calendarConfig.schedulePastEvents = {!Group_Calendar_Config__c.Schedule_Past_Events__c};
+	app.calendarConfig.groupCalendar = '{!Group_Calendar_Config__c.Group_Name__c}';
+	app.calendarConfig.eventDuration = 30;
+	app.calendarConfig.eventBuffer = 15;
+	app.calendarConfig.newEvent = {
+		Id: null,
+		Group_Calendar_Name__c: app.calendarConfig.groupCalendar,
+		WhatId: app.calendarConfig.whatid
+	};
+	app.validationForm = {};
+	/* App Driver */
+	$(document).ready(function() {
+		// Create the time zone selector and bind to change
+		jQuery('#timeZoneSelect').html(_.template( jQuery("#timeZoneSelectTemplate").html(), {}));
+		app.calendarTimeZone = Date.today().getTimezone();
+		jQuery('#calendarTimeZone').val( app.calendarTimeZone );
+		jQuery('#calendarTimeZone').on('change',function(){app.updateCalendarTimeZone()});
+		// Create the calendar
+		app.createCalendar();
+	});
+</script>
+</apex:page>
